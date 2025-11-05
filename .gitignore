@@ -265,3 +265,6 @@ junit.xml
 /jest_html_reporters/
 /jest-html-reporters-attach
 /html-report/
+
+# Playwright
+/playwright/.auth/

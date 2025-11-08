@@ -1,3 +1,4 @@
 import AdBlock from './AdBlock';
+import { StateCityData } from './StateCityData.js';
 
-export { AdBlock };
+export { AdBlock, StateCityData };

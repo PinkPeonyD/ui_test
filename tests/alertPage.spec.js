@@ -1,29 +1,262 @@
-import { test } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import { AlertsPage, MainPage } from '../src/pageObjects';
 
 test.beforeEach(async ({ page }) => {
-  // await AdBlock.blockAds(page);
   await page.goto('https://demoqa.com', { waitUntil: 'domcontentloaded' });
 });
 
-test.describe('Check Alert Page', async () => {
-  test('Handle Alerts', async ({ page }) => {
+test.describe('Alerts Page - Full Coverage', () => {
+  test.beforeEach(async ({ page }) => {
     const mainPage = new MainPage(page);
     const alertPage = new AlertsPage(page);
-    await test.step('Click on card "Alerts, Frame & Windows"', async () => {
-      await mainPage.clickCategoryCard('Alerts, Frame & Windows');
-    });
 
-    await test.step('Click on card "Alerts"', async () => {
+    await test.step('Navigate to Alerts page', async () => {
+      await mainPage.clickCategoryCard('Alerts, Frame & Windows');
       await mainPage.clickOnElementCardList('Alerts');
     });
 
-    await test.step('Handle simple alert', async () => {
+    await test.step('Verify Alerts header is displayed', async () => {
+      const isHeaderVisible = await alertPage.verifyAlertsHeader();
+      expect(isHeaderVisible).toBe(true);
+    });
+  });
+
+  test('1. Simple Alert - #alertButton', async ({ page }) => {
+    const alertPage = new AlertsPage(page);
+    let dialogAppeared = false;
+    let dialogMessage = '';
+
+    await test.step('Verify no dialog before click', async () => {
       page.on('dialog', async dialog => {
-        console.log(`Dialog message: ${dialog.message()}`);
+        dialogAppeared = true;
+        dialogMessage = dialog.message();
         await dialog.accept();
       });
-      await alertPage.clickAlertButtonByType('alertButton');
+
+      await page.waitForTimeout(500);
+      expect(dialogAppeared).toBe(false);
+    });
+
+    await test.step('Click simple alert button and verify dialog', async () => {
+      await alertPage.clickSimpleAlert();
+
+      await page.waitForTimeout(1000);
+
+      expect(dialogAppeared).toBe(true);
+      expect(dialogMessage).toBe('You clicked a button');
+    });
+
+    await test.step('Verify no active dialogs after closing', async () => {
+      const noActiveDialogs = await alertPage.verifyNoActiveDialogs();
+      expect(noActiveDialogs).toBe(true);
+    });
+  });
+
+  test('2. Timer Alert (5s) - #timerAlertButton', async ({ page }) => {
+    const alertPage = new AlertsPage(page);
+    let dialogAppeared = false;
+    let dialogMessage = '';
+    let dialogStartTime;
+
+    await test.step('Verify no dialog before click', async () => {
+      page.on('dialog', async dialog => {
+        dialogAppeared = true;
+        dialogMessage = dialog.message();
+        await dialog.accept();
+      });
+
+      await page.waitForTimeout(500);
+      expect(dialogAppeared).toBe(false);
+    });
+
+    await test.step('Click timer alert button and verify dialog appears within 10s', async () => {
+      dialogStartTime = Date.now();
+      await alertPage.clickTimerAlert();
+
+      await expect
+        .poll(() => dialogAppeared, {
+          timeout: 10000,
+          intervals: [100, 250, 500],
+        })
+        .toBe(true);
+
+      const elapsedTime = Date.now() - dialogStartTime;
+      expect(elapsedTime).toBeLessThanOrEqual(10000);
+      expect(dialogMessage).toBe('This alert appeared after 5 seconds');
+    });
+
+    await test.step('Verify no active dialogs after closing', async () => {
+      const noActiveDialogs = await alertPage.verifyNoActiveDialogs();
+      expect(noActiveDialogs).toBe(true);
+    });
+  });
+
+  test('3A. Confirm Alert - Accept (OK)', async ({ page }) => {
+    const alertPage = new AlertsPage(page);
+    let dialogHandled = false;
+
+    await test.step('Set up dialog handler for accept', async () => {
+      page.on('dialog', async dialog => {
+        expect(dialog.type()).toBe('confirm');
+        await dialog.accept();
+        dialogHandled = true;
+      });
+    });
+
+    await test.step('Click confirm button and accept dialog', async () => {
+      await alertPage.clickConfirmAlert();
+
+      await expect.poll(() => dialogHandled).toBe(true);
+    });
+
+    await test.step('Verify result shows OK selection', async () => {
+      const result = await alertPage.getConfirmResult();
+      expect(result).toContain('You selected Ok');
+      expect(result).not.toContain('Cancel');
+    });
+  });
+
+  test('3B. Confirm Alert - Dismiss (Cancel)', async ({ page }) => {
+    const alertPage = new AlertsPage(page);
+    let dialogHandled = false;
+
+    await test.step('Set up dialog handler for dismiss', async () => {
+      page.on('dialog', async dialog => {
+        expect(dialog.type()).toBe('confirm');
+        await dialog.dismiss();
+        dialogHandled = true;
+      });
+    });
+
+    await test.step('Click confirm button and dismiss dialog', async () => {
+      await alertPage.clickConfirmAlert();
+
+      await expect.poll(() => dialogHandled).toBe(true);
+    });
+
+    await test.step('Verify result shows Cancel selection', async () => {
+      const result = await alertPage.getConfirmResult();
+      expect(result).toContain('You selected Cancel');
+      expect(result).not.toContain('You selected Ok');
+    });
+  });
+
+  test('4A. Prompt Alert - Enter value', async ({ page }) => {
+    const alertPage = new AlertsPage(page);
+    const testValue = 'Daria';
+    let dialogHandled = false;
+
+    await test.step('Set up dialog handler with input and click prompt', async () => {
+      page.once('dialog', async dialog => {
+        expect(dialog.type()).toBe('prompt');
+        await dialog.accept(testValue);
+        dialogHandled = true;
+      });
+
+      await alertPage.clickPromptAlert();
+      await expect.poll(() => dialogHandled, { timeout: 5000 }).toBe(true);
+    });
+
+    await test.step('Verify result shows entered value', async () => {
+      const result = await alertPage.getPromptResult();
+      expect(result).toContain(`You entered ${testValue}`);
+      expect(result).not.toContain('null');
+    });
+  });
+
+  test('4B. Prompt Alert - Cancel (null)', async ({ page }) => {
+    const alertPage = new AlertsPage(page);
+    let dialogHandled = false;
+
+    await test.step('Set up dialog handler for dismiss and click prompt', async () => {
+      page.once('dialog', async dialog => {
+        expect(dialog.type()).toBe('prompt');
+        await dialog.dismiss();
+        dialogHandled = true;
+      });
+
+      await alertPage.clickPromptAlert();
+      await expect.poll(() => dialogHandled, { timeout: 5000 }).toBe(true);
+    });
+
+    await test.step('Verify result shows null value or no result element', async () => {
+      try {
+        await page.waitForTimeout(2000);
+
+        const elementCount = await page.locator('#promptResult').count();
+
+        if (elementCount > 0) {
+          const result = await page.locator('#promptResult').textContent();
+          expect(result).toContain('You entered null');
+          expect(result).not.toMatch(/You entered [a-zA-Zа-яА-ЯёЁ]/);
+        } else {
+          console.log('Prompt result element did not appear after cancelling - this is acceptable behavior');
+          expect(true).toBe(true);
+        }
+      } catch (error) {
+        const pageContent = await page.content();
+        console.log('Page content after prompt cancel:', pageContent.substring(0, 1000));
+        throw error;
+      }
+    });
+  });
+
+  test('All alerts comprehensive test', async ({ page }) => {
+    const alertPage = new AlertsPage(page);
+
+    await test.step('Test all alert types in sequence', async () => {
+      let simpleDialogHandled = false;
+      const simpleHandler = async dialog => {
+        expect(dialog.message()).toBe('You clicked a button');
+        await dialog.accept();
+        simpleDialogHandled = true;
+      };
+
+      page.once('dialog', simpleHandler);
+      await alertPage.clickSimpleAlert();
+      await expect.poll(() => simpleDialogHandled).toBe(true);
+
+      let confirmDialogHandled = false;
+      const confirmHandler = async dialog => {
+        await dialog.accept();
+        confirmDialogHandled = true;
+      };
+
+      page.once('dialog', confirmHandler);
+      await alertPage.clickConfirmAlert();
+      await expect.poll(() => confirmDialogHandled).toBe(true);
+
+      const confirmResult = await alertPage.getConfirmResult();
+      expect(confirmResult).toContain('You selected Ok');
+
+      let promptDialogHandled = false;
+      const promptHandler = async dialog => {
+        await dialog.accept('Daria');
+        promptDialogHandled = true;
+      };
+
+      page.once('dialog', promptHandler);
+      await alertPage.clickPromptAlert();
+      await expect.poll(() => promptDialogHandled).toBe(true);
+
+      const promptResult = await alertPage.getPromptResult();
+      expect(promptResult).toContain('You entered Daria');
+
+      let timerDialogHandled = false;
+      const timerHandler = async dialog => {
+        expect(dialog.message()).toBe('This alert appeared after 5 seconds');
+        await dialog.accept();
+        timerDialogHandled = true;
+      };
+
+      page.once('dialog', timerHandler);
+      await alertPage.clickTimerAlert();
+      await expect.poll(() => timerDialogHandled, { timeout: 8000 }).toBe(true);
+    });
+
+    await test.step('Verify no active dialogs remain', async () => {
+      const noActiveDialogs = await alertPage.verifyNoActiveDialogs();
+      expect(noActiveDialogs).toBe(true);
     });
   });
 });

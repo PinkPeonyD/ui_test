@@ -10,7 +10,10 @@ export default class AutomationPracticeFormPage extends BasePage {
       userEmail: page.locator('#userEmail'),
       userNumber: page.locator('#userNumber'),
       currentAddress: page.locator('#currentAddress'),
-
+//TODO These locators are hard to maintain because they rely on static 'for' attribute values.
+// If the checkbox IDs change, the selectors will break.
+// It's better to use XPath with template literals (e.g., `//label[contains(text(), "${hobbyName}")]`)
+// to make the locators more flexible and easier to update.
       genderMaleLabel: page.locator('label[for="gender-radio-1"]'),
       genderFemaleLabel: page.locator('label[for="gender-radio-2"]'),
       genderOtherLabel: page.locator('label[for="gender-radio-3"]'),
@@ -20,7 +23,7 @@ export default class AutomationPracticeFormPage extends BasePage {
       datePickerYear: page.locator('.react-datepicker__year-select'),
 
       subjectsInput: page.locator('#subjectsInput'),
-
+//TODO rewrite to xpath
       hobbySportsLabel: page.locator('label[for="hobbies-checkbox-1"]'),
       hobbyReadingLabel: page.locator('label[for="hobbies-checkbox-2"]'),
       hobbyMusicLabel: page.locator('label[for="hobbies-checkbox-3"]'),
@@ -78,7 +81,7 @@ export default class AutomationPracticeFormPage extends BasePage {
     await genderMap[gender].scrollIntoViewIfNeeded();
     await genderMap[gender].click();
   }
-
+//TODO do not hardcode values. Use random data
   async selectDateOfBirth(day, month, year) {
     await this.selectors.dateOfBirthInput.click();
 
@@ -95,7 +98,7 @@ export default class AutomationPracticeFormPage extends BasePage {
     }
 
     await this.page.waitForTimeout(500);
-
+//TODO remove locators to the constructor
     try {
       await this.page.locator(`.react-datepicker__day--${day.toString().padStart(3, '0')}`).click();
     } catch (error) {
@@ -123,7 +126,7 @@ export default class AutomationPracticeFormPage extends BasePage {
       await this.addSubject(subject);
     }
   }
-
+//TODO remove locators to the constructor
   async selectHobbies(hobbies) {
     const hobbyMap = {
       Sports: this.selectors.hobbySportsLabel,

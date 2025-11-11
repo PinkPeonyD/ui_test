@@ -3,7 +3,7 @@ import { AutomationPracticeFormPage, MainPage } from '../src/pageObjects';
 import { StateCityData } from '../src/utils';
 import path from 'path';
 import fs from 'fs';
-
+//TODO: Remove hardcoded data from tests
 test.beforeEach(async ({ page }) => {
   await page.route('**/*', route => {
     const url = route.request().url();
@@ -98,6 +98,10 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
     await test.step('Select state and city', async () => {
       await formPage.selectState(stateCityData.state);
+      // TODO: Do we need this timeout? Replace with waitForResponse or waitForSelector if needed
+      // Avoid hardcoding timeouts like await page.waitForTimeout(1000);
+      // This approach is unreliable and can slow down tests unnecessarily.
+      // Instead, use explicit waits for specific elements or conditions to ensure stability and better performance.
       await page.waitForTimeout(1000);
       await formPage.selectCity(stateCityData.city);
     });

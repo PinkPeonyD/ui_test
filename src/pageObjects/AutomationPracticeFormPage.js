@@ -10,30 +10,17 @@ export default class AutomationPracticeFormPage extends BasePage {
       userEmail: page.locator('#userEmail'),
       userNumber: page.locator('#userNumber'),
       currentAddress: page.locator('#currentAddress'),
-//TODO These locators are hard to maintain because they rely on static 'for' attribute values.
-// If the checkbox IDs change, the selectors will break.
-// It's better to use XPath with template literals (e.g., `//label[contains(text(), "${hobbyName}")]`)
-// to make the locators more flexible and easier to update.
-      genderMaleLabel: page.locator('label[for="gender-radio-1"]'),
-      genderFemaleLabel: page.locator('label[for="gender-radio-2"]'),
-      genderOtherLabel: page.locator('label[for="gender-radio-3"]'),
 
       dateOfBirthInput: page.locator('#dateOfBirthInput'),
       datePickerMonth: page.locator('.react-datepicker__month-select'),
       datePickerYear: page.locator('.react-datepicker__year-select'),
 
       subjectsInput: page.locator('#subjectsInput'),
-//TODO rewrite to xpath
-      hobbySportsLabel: page.locator('label[for="hobbies-checkbox-1"]'),
-      hobbyReadingLabel: page.locator('label[for="hobbies-checkbox-2"]'),
-      hobbyMusicLabel: page.locator('label[for="hobbies-checkbox-3"]'),
 
       uploadPicture: page.locator('#uploadPicture'),
 
       stateDropdown: page.locator('#state'),
-      stateInput: page.locator('#react-select-3-input'),
       cityDropdown: page.locator('#city'),
-      cityInput: page.locator('#react-select-4-input'),
 
       submitButton: page.locator('#submit'),
 
@@ -42,6 +29,30 @@ export default class AutomationPracticeFormPage extends BasePage {
 
       formHeader: page.locator('.practice-form-wrapper h5', { hasText: 'Student Registration Form' }),
     };
+  }
+
+  getStateInputLocator() {
+    return this.page.locator(
+      'xpath=//div[@id="state"]//input[contains(@id, "react-select") and contains(@id, "input")]',
+    );
+  }
+
+  getCityInputLocator() {
+    return this.page.locator(
+      'xpath=//div[@id="city"]//input[contains(@id, "react-select") and contains(@id, "input")]',
+    );
+  }
+
+  getDatePickerDayLocator(day) {
+    return this.page.locator(`.react-datepicker__day--${day.toString().padStart(3, '0')}`);
+  }
+
+  getDatePickerDayByAriaLabel(day) {
+    return this.page.locator(`[aria-label*="${day}"]`);
+  }
+
+  getDatePickerDayByText(day) {
+    return this.page.locator('.react-datepicker__day', { hasText: day.toString() }).first();
   }
 
   async verifyFormHeader() {
@@ -72,16 +83,13 @@ export default class AutomationPracticeFormPage extends BasePage {
   }
 
   async selectGender(gender) {
-    const genderMap = {
-      Male: this.selectors.genderMaleLabel,
-      Female: this.selectors.genderFemaleLabel,
-      Other: this.selectors.genderOtherLabel,
-    };
-
-    await genderMap[gender].scrollIntoViewIfNeeded();
-    await genderMap[gender].click();
+    const genderLocator = this.page.locator(
+      `xpath=//label[contains(text(), "${gender}") and @for[starts-with(., "gender-radio")]]`,
+    );
+    await genderLocator.scrollIntoViewIfNeeded();
+    await genderLocator.click();
   }
-//TODO do not hardcode values. Use random data
+
   async selectDateOfBirth(day, month, year) {
     await this.selectors.dateOfBirthInput.click();
 
@@ -89,36 +97,43 @@ export default class AutomationPracticeFormPage extends BasePage {
 
     try {
       await this.selectors.datePickerMonth.selectOption(month);
-    } catch (error) {
+    } catch {
       try {
         await this.selectors.datePickerMonth.selectOption('June');
-      } catch (error2) {
+      } catch {
         await this.selectors.datePickerMonth.selectOption('6');
       }
     }
 
-    await this.page.waitForTimeout(500);
-//TODO remove locators to the constructor
+    await this.page.waitForSelector('.react-datepicker__day', { state: 'visible' });
+
     try {
-      await this.page.locator(`.react-datepicker__day--${day.toString().padStart(3, '0')}`).click();
-    } catch (error) {
+      await this.getDatePickerDayLocator(day).click();
+    } catch {
       try {
-        await this.page.locator(`[aria-label*="${day}"]`).click();
-      } catch (error2) {
-        await this.page.locator('.react-datepicker__day', { hasText: day.toString() }).first().click();
+        await this.getDatePickerDayByAriaLabel(day).click();
+      } catch {
+        await this.getDatePickerDayByText(day).click();
       }
     }
   }
 
   async addSubject(subject) {
     await this.page.keyboard.press('Escape');
-    await this.page.waitForTimeout(500);
 
     await this.selectors.subjectsInput.scrollIntoViewIfNeeded();
     await this.selectors.subjectsInput.click({ force: true });
     await this.selectors.subjectsInput.fill(subject);
     await this.page.keyboard.press('Enter');
-    await this.page.waitForTimeout(500);
+
+    await this.page
+      .waitForSelector(`.css-1rhbuit-multiValue:has-text("${subject}")`, {
+        state: 'attached',
+        timeout: 3000,
+      })
+      .catch(() => {
+        console.log(`Subject chip for "${subject}" may not have appeared`);
+      });
   }
 
   async addMultipleSubjects(subjects) {
@@ -126,28 +141,14 @@ export default class AutomationPracticeFormPage extends BasePage {
       await this.addSubject(subject);
     }
   }
-//TODO remove locators to the constructor
-  async selectHobbies(hobbies) {
-    const hobbyMap = {
-      Sports: this.selectors.hobbySportsLabel,
-      Reading: this.selectors.hobbyReadingLabel,
-      Music: this.selectors.hobbyMusicLabel,
-    };
 
+  async selectHobbies(hobbies) {
     await this.page.keyboard.press('Escape');
-    await this.page.waitForTimeout(500);
 
     for (const hobby of hobbies) {
-      try {
-        await hobbyMap[hobby].scrollIntoViewIfNeeded();
-        await hobbyMap[hobby].click({ force: true });
-        await this.page.waitForTimeout(300);
-      } catch (error) {
-        console.log(`Failed to click hobby ${hobby}, trying alternative method`);
-        await this.page
-          .locator(`#hobbies-checkbox-${['Sports', 'Reading', 'Music'].indexOf(hobby) + 1}`)
-          .check({ force: true });
-      }
+      const hobbyLocator = this.page.locator(`//label[normalize-space(text())="${hobby}"]`);
+      await hobbyLocator.scrollIntoViewIfNeeded();
+      await hobbyLocator.click({ force: true });
     }
   }
 
@@ -164,25 +165,34 @@ export default class AutomationPracticeFormPage extends BasePage {
     } else {
       await this.selectors.uploadPicture.setInputFiles(filePathOrBuffer);
     }
-
-    await this.page.waitForTimeout(500);
   }
 
   async selectState(stateName) {
     await this.selectors.stateDropdown.scrollIntoViewIfNeeded();
     await this.selectors.stateDropdown.click();
-    await this.selectors.stateInput.fill(stateName);
+    await this.getStateInputLocator().fill(stateName);
     await this.page.keyboard.press('Enter');
+
+    const cityInput = this.getCityInputLocator();
+    await cityInput.waitFor({ state: 'attached', timeout: 5000 });
+    await this.page.waitForFunction(
+      /* global document */
+      () => {
+        const input = document.querySelector('div#city input[id*="react-select"][id*="input"]');
+        return input && !input.disabled;
+      },
+      { timeout: 5000 },
+    );
   }
 
   async selectCity(cityName) {
     await this.selectors.cityDropdown.click();
-    await this.selectors.cityInput.fill(cityName);
+    await this.getCityInputLocator().fill(cityName);
     await this.page.keyboard.press('Enter');
   }
 
   async isCityDropdownDisabled() {
-    const isDisabled = await this.selectors.cityInput.isDisabled();
+    const isDisabled = await this.getCityInputLocator().isDisabled();
     return isDisabled;
   }
 

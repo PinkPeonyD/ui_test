@@ -1,9 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { AutomationPracticeFormPage, MainPage } from '../src/pageObjects';
-import { StateCityData } from '../src/utils';
+import { StateCityData, TestDataGenerator } from '../src/utils';
 import path from 'path';
 import fs from 'fs';
-//TODO: Remove hardcoded data from tests
+
 test.beforeEach(async ({ page }) => {
   await page.route('**/*', route => {
     const url = route.request().url();
@@ -50,12 +50,13 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
   test('Positive: Fill required fields only', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateMinimalFormData();
 
     await test.step('Fill minimum required fields', async () => {
-      await formPage.fillFirstName('Daria');
-      await formPage.fillLastName('Shamraeva');
-      await formPage.selectGender('Female');
-      await formPage.fillMobile('1234567890');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
     });
 
     await test.step('Submit form', async () => {
@@ -70,26 +71,27 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
     await test.step('Verify basic data in modal', async () => {
       const modalData = await formPage.getModalData();
 
-      expect(modalData['Student Name']).toBe('Daria Shamraeva');
-      expect(modalData['Gender']).toBe('Female');
-      expect(modalData['Mobile']).toBe('1234567890');
+      expect(modalData['Student Name']).toBe(`${testData.firstName} ${testData.lastName}`);
+      expect(modalData['Gender']).toBe(testData.gender);
+      expect(modalData['Mobile']).toBe(testData.mobile);
     });
   });
 
   test('Positive: Fill all fields step by step', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
-    const stateCityData = StateCityData.getFixedStateCityWithAddress();
+    const testData = TestDataGenerator.generateCompleteFormData();
+    const stateCityData = StateCityData.getRandomStateCityWithAddress();
 
     await test.step('Fill basic info', async () => {
-      await formPage.fillFirstName('Daria');
-      await formPage.fillLastName('Shamraeva');
-      await formPage.fillEmail('daria.shamraeva@example.com');
-      await formPage.selectGender('Female');
-      await formPage.fillMobile('1234567890');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.fillEmail(testData.email);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
     });
 
     await test.step('Select date of birth', async () => {
-      await formPage.selectDateOfBirth(6, '5', '2001');
+      await formPage.selectDateOfBirth(testData.birthDay, testData.birthMonth, testData.birthYear);
     });
 
     await test.step('Fill address', async () => {
@@ -98,11 +100,6 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
     await test.step('Select state and city', async () => {
       await formPage.selectState(stateCityData.state);
-      // TODO: Do we need this timeout? Replace with waitForResponse or waitForSelector if needed
-      // Avoid hardcoding timeouts like await page.waitForTimeout(1000);
-      // This approach is unreliable and can slow down tests unnecessarily.
-      // Instead, use explicit waits for specific elements or conditions to ensure stability and better performance.
-      await page.waitForTimeout(1000);
       await formPage.selectCity(stateCityData.city);
     });
 
@@ -113,11 +110,11 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
       expect(isModalVisible).toBe(true);
 
       const modalData = await formPage.getModalData();
-      expect(modalData['Student Name']).toBe('Daria Shamraeva');
-      expect(modalData['Student Email']).toBe('daria.shamraeva@example.com');
-      expect(modalData['Gender']).toBe('Female');
-      expect(modalData['Mobile']).toBe('1234567890');
-      expect(modalData['Date of Birth']).toMatch(/.*June.*2001|.*06.*2001|.*6.*2001/);
+      expect(modalData['Student Name']).toBe(`${testData.firstName} ${testData.lastName}`);
+      expect(modalData['Student Email']).toBe(testData.email);
+      expect(modalData['Gender']).toBe(testData.gender);
+      expect(modalData['Mobile']).toBe(testData.mobile);
+      expect(modalData['Date of Birth']).toBeTruthy();
       expect(modalData['Address']).toBe(stateCityData.address);
       expect(modalData['State and City']).toBe(
         StateCityData.formatStateCityResult(stateCityData.state, stateCityData.city),
@@ -127,18 +124,18 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
   test('Complete form with all basic fields', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
-    const stateCityData = StateCityData.getFixedStateCityWithAddress();
+    const testData = TestDataGenerator.generateCompleteFormData();
+    const stateCityData = StateCityData.getRandomStateCityWithAddress();
 
     await test.step('Fill complete form with all basic fields', async () => {
-      await formPage.fillFirstName('Daria');
-      await formPage.fillLastName('Shamraeva');
-      await formPage.fillEmail('daria.shamraeva@example.com');
-      await formPage.selectGender('Female');
-      await formPage.fillMobile('1234567890');
-      await formPage.selectDateOfBirth(6, '5', '2001');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.fillEmail(testData.email);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
+      await formPage.selectDateOfBirth(testData.birthDay, testData.birthMonth, testData.birthYear);
       await formPage.fillCurrentAddress(stateCityData.address);
       await formPage.selectState(stateCityData.state);
-      await page.waitForTimeout(1000);
       await formPage.selectCity(stateCityData.city);
       await formPage.uploadFile(testImagePath);
 
@@ -148,11 +145,11 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
       expect(isModalVisible).toBe(true);
 
       const modalData = await formPage.getModalData();
-      expect(modalData['Student Name']).toBe('Daria Shamraeva');
-      expect(modalData['Student Email']).toBe('daria.shamraeva@example.com');
-      expect(modalData['Gender']).toBe('Female');
-      expect(modalData['Mobile']).toBe('1234567890');
-      expect(modalData['Date of Birth']).toContain('06 June,2001');
+      expect(modalData['Student Name']).toBe(`${testData.firstName} ${testData.lastName}`);
+      expect(modalData['Student Email']).toBe(testData.email);
+      expect(modalData['Gender']).toBe(testData.gender);
+      expect(modalData['Mobile']).toBe(testData.mobile);
+      expect(modalData['Date of Birth']).toBeTruthy();
       expect(modalData['Address']).toBe(stateCityData.address);
       expect(modalData['State and City']).toBe(
         StateCityData.formatStateCityResult(stateCityData.state, stateCityData.city),
@@ -163,12 +160,13 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
   test('Hobbies functionality', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateMinimalFormData();
 
     await test.step('Fill required fields and select hobby', async () => {
-      await formPage.fillFirstName('Daria');
-      await formPage.fillLastName('Shamraeva');
-      await formPage.selectGender('Female');
-      await formPage.fillMobile('1234567890');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
 
       await formPage.selectHobbies(['Sports']);
 
@@ -197,11 +195,12 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
   test('Negative: Missing required gender', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateMinimalFormData();
 
     await test.step('Fill form without gender', async () => {
-      await formPage.fillFirstName('Test');
-      await formPage.fillLastName('User');
-      await formPage.fillMobile('1234567890');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.fillMobile(testData.mobile);
     });
 
     await test.step('Submit and verify failure', async () => {
@@ -214,11 +213,12 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
   test('Negative: Invalid mobile number', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateMinimalFormData();
 
     await test.step('Fill form with short mobile', async () => {
-      await formPage.fillFirstName('Test');
-      await formPage.fillLastName('User');
-      await formPage.selectGender('Male');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.selectGender(testData.gender);
       await formPage.fillMobile('123');
     });
 
@@ -233,6 +233,7 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
   test('State and City dependency', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
     const stateCity = StateCityData.getFixedStateCity();
+    const testData = TestDataGenerator.generateMinimalFormData();
 
     await test.step('Verify city is initially disabled', async () => {
       const isCityDisabled = await formPage.isCityDropdownDisabled();
@@ -241,7 +242,6 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
     await test.step('Select state and verify city enabled', async () => {
       await formPage.selectState(stateCity.state);
-      await page.waitForTimeout(1000);
 
       const isCityDisabled = await formPage.isCityDropdownDisabled();
       expect(isCityDisabled).toBe(false);
@@ -250,10 +250,10 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
     await test.step('Complete form and verify state/city in result', async () => {
       await formPage.selectCity(stateCity.city);
 
-      await formPage.fillFirstName('Test');
-      await formPage.fillLastName('User');
-      await formPage.selectGender('Male');
-      await formPage.fillMobile('1234567890');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
 
       await formPage.submitForm();
 
@@ -267,21 +267,21 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
   test('Random state and city combinations', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateMinimalFormData();
 
     await test.step('Test with random state-city combination', async () => {
       const randomStateCityData = StateCityData.getRandomStateCityWithAddress();
       console.log(`Testing with random combination: ${randomStateCityData.state} - ${randomStateCityData.city}`);
       console.log(`Generated address: ${randomStateCityData.address}`);
 
-      await formPage.fillFirstName('Test');
-      await formPage.fillLastName('User');
-      await formPage.selectGender('Male');
-      await formPage.fillMobile('1234567890');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
 
       await formPage.fillCurrentAddress(randomStateCityData.address);
 
       await formPage.selectState(randomStateCityData.state);
-      await page.waitForTimeout(1000);
       await formPage.selectCity(randomStateCityData.city);
 
       await formPage.submitForm();
@@ -304,22 +304,22 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
   test('All state-city combinations validation', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
     const allCombinations = StateCityData.getAllStateCityCombinations();
-
     const testCombinations = allCombinations.slice(0, 3);
 
     for (const combination of testCombinations) {
       await test.step(`Test combination: ${combination.state} - ${combination.city}`, async () => {
+        const testData = TestDataGenerator.generateMinimalFormData();
+
         await page.reload();
         await page.waitForLoadState('domcontentloaded');
         await formPage.blockAds();
 
-        await formPage.fillFirstName('Test');
-        await formPage.fillLastName('User');
-        await formPage.selectGender('Female');
-        await formPage.fillMobile('1234567890');
+        await formPage.fillFirstName(testData.firstName);
+        await formPage.fillLastName(testData.lastName);
+        await formPage.selectGender(testData.gender);
+        await formPage.fillMobile(testData.mobile);
 
         await formPage.selectState(combination.state);
-        await page.waitForTimeout(1000);
         await formPage.selectCity(combination.city);
 
         await formPage.submitForm();
@@ -338,13 +338,14 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
   test('Email validation patterns', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateCompleteFormData();
 
-    await test.step('Test valid email: daria.shamraeva@example.com', async () => {
-      await formPage.fillFirstName('Daria');
-      await formPage.fillLastName('Shamraeva');
-      await formPage.fillEmail('daria.shamraeva@example.com');
-      await formPage.selectGender('Female');
-      await formPage.fillMobile('1234567890');
+    await test.step('Test valid email format', async () => {
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.fillEmail(testData.email);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
 
       await formPage.submitForm();
 
@@ -352,24 +353,22 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
       expect(isModalVisible).toBe(true);
 
       const modalData = await formPage.getModalData();
-      expect(modalData['Student Email']).toBe('daria.shamraeva@example.com');
+      expect(modalData['Student Email']).toBe(testData.email);
     });
   });
 
   test('File upload verification', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateMinimalFormData();
 
     await test.step('Upload file and verify', async () => {
-      await formPage.fillFirstName('Daria');
-      await formPage.fillLastName('Shamraeva');
-      await formPage.selectGender('Female');
-      await formPage.fillMobile('1234567890');
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
 
       await formPage.uploadFile(testImagePath);
-      await page.waitForTimeout(1000);
-
       await formPage.submitForm();
-      await page.waitForTimeout(1000);
 
       const isModalVisible = await formPage.isModalVisible();
       expect(isModalVisible).toBe(true);

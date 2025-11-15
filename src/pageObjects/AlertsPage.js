@@ -55,32 +55,25 @@ export default class AlertsPage extends BasePage {
     try {
       await this.selectors.promptResult.waitFor({ state: 'visible', timeout: 15000 });
       return await this.selectors.promptResult.textContent();
-    } catch (error) {
+    } catch {
       const elementExists = await this.selectors.promptResult.count();
       if (elementExists > 0) {
         return await this.selectors.promptResult.textContent();
       }
-      throw error;
+      throw new Error('Prompt result element not found');
     }
   }
 
   async waitForPromptResult(timeout = 15000) {
-    const startTime = Date.now();
-    while (Date.now() - startTime < timeout) {
-      try {
-        const elementCount = await this.selectors.promptResult.count();
-        if (elementCount > 0) {
-          const isVisible = await this.selectors.promptResult.isVisible();
-          if (isVisible) {
-            return await this.selectors.promptResult.textContent();
-          }
-        }
-        await this.page.waitForTimeout(100);
-      } catch (error) {
-        await this.page.waitForTimeout(100);
-      }
+    try {
+      await this.selectors.promptResult.waitFor({
+        state: 'visible',
+        timeout,
+      });
+      return await this.selectors.promptResult.textContent();
+    } catch {
+      throw new Error(`Prompt result element not found within ${timeout}ms`);
     }
-    throw new Error(`Prompt result element not found within ${timeout}ms`);
   }
 
   async verifyNoActiveDialogs() {

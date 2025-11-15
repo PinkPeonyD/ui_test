@@ -33,16 +33,13 @@ test.describe('Alerts Page - Full Coverage', () => {
         await dialog.accept();
       });
 
-      await page.waitForTimeout(500);
       expect(dialogAppeared).toBe(false);
     });
 
     await test.step('Click simple alert button and verify dialog', async () => {
       await alertPage.clickSimpleAlert();
 
-      await page.waitForTimeout(1000);
-
-      expect(dialogAppeared).toBe(true);
+      await expect.poll(() => dialogAppeared, { timeout: 3000 }).toBe(true);
       expect(dialogMessage).toBe('You clicked a button');
     });
 
@@ -65,7 +62,6 @@ test.describe('Alerts Page - Full Coverage', () => {
         await dialog.accept();
       });
 
-      await page.waitForTimeout(500);
       expect(dialogAppeared).toBe(false);
     });
 
@@ -181,7 +177,14 @@ test.describe('Alerts Page - Full Coverage', () => {
 
     await test.step('Verify result shows null value or no result element', async () => {
       try {
-        await page.waitForTimeout(2000);
+        await page
+          .waitForSelector('#promptResult', {
+            state: 'visible',
+            timeout: 5000,
+          })
+          .catch(() => {
+            console.log('Prompt result element did not appear - this may be acceptable behavior');
+          });
 
         const elementCount = await page.locator('#promptResult').count();
 

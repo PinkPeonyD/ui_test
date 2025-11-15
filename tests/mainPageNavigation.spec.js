@@ -6,4 +6,4 @@ test.beforeEach(async ({ page }) => {
   await page.goto('https://demoqa.com', { waitUntil: 'domcontentloaded' });
 });
 
-test('Click on category card', async ({ page }) => {});
+test('Click on category card', async () => {});

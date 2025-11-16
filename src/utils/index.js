@@ -1,4 +1,4 @@
-import AdBlock from './AdBlock';
+import AdBlock from './AdBlock.js';
 import { StateCityData } from './StateCityData.js';
 import TestDataGenerator from './TestDataGenerator.js';
 

@@ -36,6 +36,46 @@ npm run test-headed
 npm run test-ui
 ```
 
+```bash
+VIEWPORT_WIDTH=1280 VIEWPORT_HEIGHT=720 npx playwright test
+```
+
+```bash
+VIEWPORT_WIDTH=1440 VIEWPORT_HEIGHT=900 npx playwright test
+```
+
+```bash
+WORKERS=2 npx playwright test
+```
+
+```bash
+WORKERS=1 npx playwright test
+```
+
+```bash
+WORKERS=10 npx playwright test
+```
+
+```bash
+RUN_THIS="Text Box" npx playwright test
+```
+
+```bash
+RUN_THIS="Select Menu" npx playwright test
+```
+
+```bash
+RUN_THIS="Form" npx playwright test
+```
+
+```bash
+VIEWPORT_WIDTH=1280 VIEWPORT_HEIGHT=720 WORKERS=2 RUN_THIS="Text Box" npx playwright test
+```
+
+```bash
+VIEWPORT_WIDTH=1920 VIEWPORT_HEIGHT=1080 WORKERS=4 npx playwright test
+```
+
 ### Running Specific Tests
 
 **Run a specific test file:**
@@ -68,31 +108,4 @@ npx playwright test --debug
 **Open HTML report:**
 ```bash
 npx playwright show-report
-```
-
-##  Code Quality
-
-### ESLint
-
-**Check code for errors:**
-```bash
-npm run lint
-```
-
-**Automatically fix errors:**
-```bash
-npm run lint:fix
-```
-
-### Prettier
-
-**Format all files:**
-```bash
-npm run prettier
-```
-
-### Full check before commit
-
-```bash
-npm run prettier && npm run lint && npm test
 ```

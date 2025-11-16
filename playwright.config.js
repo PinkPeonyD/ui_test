@@ -5,9 +5,9 @@ import { defineConfig, devices } from '@playwright/test';
  * Read environment variables from file.
  * https://github.com/motdotla/dotenv
  */
-// import dotenv from 'dotenv';
-// import path from 'path';
-// dotenv.config({ path: path.resolve(__dirname, '.env') });
+const VIEWPORT_WIDTH = process.env.VIEWPORT_WIDTH ? parseInt(process.env.VIEWPORT_WIDTH) : null;
+const VIEWPORT_HEIGHT = process.env.VIEWPORT_HEIGHT ? parseInt(process.env.VIEWPORT_HEIGHT) : null;
+const WORKERS = process.env.WORKERS ? parseInt(process.env.WORKERS) : undefined;
 
 /**
  * @see https://playwright.dev/docs/test-configuration
@@ -21,7 +21,9 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: WORKERS || (process.env.CI ? 1 : undefined),
+  /* Grep pattern to run specific tests by keyword */
+  grep: process.env.RUN_THIS ? new RegExp(process.env.RUN_THIS) : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: 'html',
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -31,45 +33,64 @@ export default defineConfig({
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
+
+    screenshot: 'only-on-failure',
   },
 
-  /* Configure projects for major browsers */
-  projects: [
-    // {
-    //   name: 'chromium',
-    //   use: { ...devices['Desktop Chrome'] },
-    // },
+  projects:
+    VIEWPORT_WIDTH && VIEWPORT_HEIGHT
+      ? [
+          {
+            name: `Google Chrome - ${VIEWPORT_WIDTH}x${VIEWPORT_HEIGHT}`,
+            use: {
+              ...devices['Desktop Chrome'],
+              channel: 'chrome',
+              viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT },
+            },
+          },
+          {
+            name: `Mozilla Firefox - ${VIEWPORT_WIDTH}x${VIEWPORT_HEIGHT}`,
+            use: {
+              ...devices['Desktop Firefox'],
+              viewport: { width: VIEWPORT_WIDTH, height: VIEWPORT_HEIGHT },
+            },
+          },
+        ]
+      : [
+          {
+            name: 'Google Chrome',
+            use: {
+              ...devices['Desktop Chrome'],
+              channel: 'chrome',
+              viewport: { width: 1920, height: 1080 },
+            },
+          },
 
-    //   {
-    //     name: 'firefox',
-    //     use: { ...devices['Desktop Firefox'] },
-    //   },
-    //
-    //   {
-    //     name: 'webkit',
-    //     use: { ...devices['Desktop Safari'] },
-    //   },
+          {
+            name: 'Google Chrome - 1366x768',
+            use: {
+              ...devices['Desktop Chrome'],
+              channel: 'chrome',
+              viewport: { width: 1366, height: 768 },
+            },
+          },
 
-    /* Test against mobile viewports. */
-    // {
-    //   name: 'Mobile Chrome',
-    //   use: { ...devices['Pixel 5'] },
-    // },
-    // {
-    //   name: 'Mobile Safari',
-    //   use: { ...devices['iPhone 12'] },
-    // },
+          {
+            name: 'Mozilla Firefox',
+            use: {
+              ...devices['Desktop Firefox'],
+              viewport: { width: 1920, height: 1080 },
+            },
+          },
 
-    /* Test against branded browsers. */
-    // {
-    //   name: 'Microsoft Edge',
-    //   use: { ...devices['Desktop Edge'], channel: 'msedge' },
-    // },
-    {
-      name: 'Google Chrome',
-      use: { ...devices['Desktop Chrome'], channel: 'chrome' },
-    },
-  ],
+          {
+            name: 'Mozilla Firefox - 1366x768',
+            use: {
+              ...devices['Desktop Firefox'],
+              viewport: { width: 1366, height: 768 },
+            },
+          },
+        ],
 
   /* Run your local dev server before starting the tests */
   // webServer: {

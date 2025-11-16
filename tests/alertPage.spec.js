@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { AlertsPage, MainPage } from '../src/pageObjects';
+import { TestDataGenerator } from '../src/utils';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('https://demoqa.com', { waitUntil: 'domcontentloaded' });
@@ -139,7 +140,7 @@ test.describe('Alerts Page - Full Coverage', () => {
 
   test('4A. Prompt Alert - Enter value', async ({ page }) => {
     const alertPage = new AlertsPage(page);
-    const testValue = 'Daria';
+    const testValue = TestDataGenerator.generateFirstName();
     let dialogHandled = false;
 
     await test.step('Set up dialog handler with input and click prompt', async () => {
@@ -206,6 +207,7 @@ test.describe('Alerts Page - Full Coverage', () => {
 
   test('All alerts comprehensive test', async ({ page }) => {
     const alertPage = new AlertsPage(page);
+    const promptValue = TestDataGenerator.generateFirstName();
 
     await test.step('Test all alert types in sequence', async () => {
       let simpleDialogHandled = false;
@@ -234,7 +236,7 @@ test.describe('Alerts Page - Full Coverage', () => {
 
       let promptDialogHandled = false;
       const promptHandler = async dialog => {
-        await dialog.accept('Daria');
+        await dialog.accept(promptValue);
         promptDialogHandled = true;
       };
 
@@ -243,7 +245,7 @@ test.describe('Alerts Page - Full Coverage', () => {
       await expect.poll(() => promptDialogHandled).toBe(true);
 
       const promptResult = await alertPage.getPromptResult();
-      expect(promptResult).toContain('You entered Daria');
+      expect(promptResult).toContain(`You entered ${promptValue}`);
 
       let timerDialogHandled = false;
       const timerHandler = async dialog => {

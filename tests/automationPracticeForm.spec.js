@@ -211,6 +211,31 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
     });
   });
 
+  test('Negative: Invalid email format', async ({ page }) => {
+    const formPage = new AutomationPracticeFormPage(page);
+    const testData = TestDataGenerator.generateMinimalFormData();
+
+    await test.step('Fill form with invalid email', async () => {
+      await formPage.fillFirstName(testData.firstName);
+      await formPage.fillLastName(testData.lastName);
+      await formPage.fillEmail('invalid-email-format');
+      await formPage.selectGender(testData.gender);
+      await formPage.fillMobile(testData.mobile);
+    });
+
+    await test.step('Submit and verify failure', async () => {
+      await formPage.submitForm();
+
+      const isModalVisible = await formPage.isModalVisible();
+      expect(isModalVisible).toBe(false);
+    });
+
+    await test.step('Verify email field has error styling', async () => {
+      const emailField = page.locator('#userEmail');
+      await expect(emailField).toHaveCSS('border-color', 'rgb(220, 53, 69)');
+    });
+  });
+
   test('Negative: Invalid mobile number', async ({ page }) => {
     const formPage = new AutomationPracticeFormPage(page);
     const testData = TestDataGenerator.generateMinimalFormData();
@@ -227,6 +252,11 @@ test.describe('Automation Practice Form - Essential Coverage', () => {
 
       const isModalVisible = await formPage.isModalVisible();
       expect(isModalVisible).toBe(false);
+    });
+
+    await test.step('Verify mobile field has error styling', async () => {
+      const mobileField = page.locator('#userNumber');
+      await expect(mobileField).toHaveCSS('border-color', 'rgb(220, 53, 69)');
     });
   });
 

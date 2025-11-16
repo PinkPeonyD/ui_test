@@ -81,7 +81,6 @@ export default class TestDataGenerator {
   }
 
   static generateMobile() {
-    // Generate a 10-digit mobile number
     return String(this.getRandomNumber(1000000000, 9999999999));
   }
 
@@ -145,6 +144,18 @@ export default class TestDataGenerator {
       lastName: this.generateLastName(),
       gender: this.generateGender(),
       mobile: this.generateMobile(),
+    };
+  }
+
+  static generateTextBoxData() {
+    const firstName = this.generateFirstName();
+    const lastName = this.generateLastName();
+
+    return {
+      fullName: `${firstName} ${lastName}`,
+      email: this.generateEmail(firstName, lastName),
+      currentAddress: this.generateAddress(),
+      permanentAddress: this.generateAddress(),
     };
   }
 }

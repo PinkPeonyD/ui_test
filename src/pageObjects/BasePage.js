@@ -35,4 +35,20 @@ export default class BasePage {
   async isElementVisible(locator) {
     return await locator.isVisible();
   }
+
+  async hideTooltip() {
+    await this.page.mouse.move(0, 0);
+  }
+
+  getOptionByText(text) {
+    return this.page.locator(`//div[contains(@class,"option") and normalize-space()="${text}"]`);
+  }
+
+  getLabelByText(text) {
+    return this.page.locator(`//label[contains(normalize-space(), "${text}")]`);
+  }
+
+  getInputById(id) {
+    return this.page.locator(`//input[@id="${id}"]`);
+  }
 }

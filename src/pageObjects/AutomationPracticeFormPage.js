@@ -83,9 +83,7 @@ export default class AutomationPracticeFormPage extends BasePage {
   }
 
   async selectGender(gender) {
-    const genderLocator = this.page.locator(
-      `xpath=//label[contains(text(), "${gender}") and @for[starts-with(., "gender-radio")]]`,
-    );
+    const genderLocator = this.page.locator(`xpath=//label[contains(text(), "${gender}")]`);
     await genderLocator.scrollIntoViewIfNeeded();
     await genderLocator.click();
   }
@@ -105,7 +103,7 @@ export default class AutomationPracticeFormPage extends BasePage {
       }
     }
 
-    await this.page.waitForSelector('.react-datepicker__day', { state: 'visible' });
+    await this.page.locator('.react-datepicker__day').first().waitFor({ state: 'visible' });
 
     try {
       await this.getDatePickerDayLocator(day).click();
@@ -126,8 +124,9 @@ export default class AutomationPracticeFormPage extends BasePage {
     await this.selectors.subjectsInput.fill(subject);
     await this.page.keyboard.press('Enter');
 
-    await this.page
-      .waitForSelector(`.css-1rhbuit-multiValue:has-text("${subject}")`, {
+    const subjectChip = this.page.locator(`div[class*="multiValue"]:has-text("${subject}")`);
+    await subjectChip
+      .waitFor({
         state: 'attached',
         timeout: 3000,
       })
@@ -176,7 +175,6 @@ export default class AutomationPracticeFormPage extends BasePage {
     const cityInput = this.getCityInputLocator();
     await cityInput.waitFor({ state: 'attached', timeout: 5000 });
     await this.page.waitForFunction(
-      /* global document */
       () => {
         const input = document.querySelector('div#city input[id*="react-select"][id*="input"]');
         return input && !input.disabled;
@@ -208,6 +206,20 @@ export default class AutomationPracticeFormPage extends BasePage {
     } catch {
       return false;
     }
+  }
+
+  async isSubmissionModalVisible() {
+    return await this.isModalVisible();
+  }
+
+  async hasEmailValidationError() {
+    const borderColor = await this.selectors.userEmail.evaluate(el => window.getComputedStyle(el).borderColor);
+    return borderColor === 'rgb(220, 53, 69)';
+  }
+
+  async hasMobileValidationError() {
+    const borderColor = await this.selectors.userNumber.evaluate(el => window.getComputedStyle(el).borderColor);
+    return borderColor === 'rgb(220, 53, 69)';
   }
 
   async getModalData() {

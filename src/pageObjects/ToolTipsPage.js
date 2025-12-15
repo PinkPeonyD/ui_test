@@ -12,16 +12,18 @@ export default class ToolTipsPage extends BasePage {
     this.sectionLink = page.locator('//a[normalize-space()="1.10.32"]');
 
     this.tooltipVisible = page.locator('[role="tooltip"]:visible');
+    this.tooltipInner = this.tooltipVisible.locator('.tooltip-inner');
   }
 
   async open() {
     await this.navigateTo(this.url);
+    await this.page.waitForLoadState('load');
+    await this.toolTipButton.waitFor({ state: 'visible' });
   }
 
   async clearTooltip() {
     await this.page.mouse.move(0, 0);
     await this.page.mouse.move(0, 500);
-    await this.page.waitForTimeout(300);
 
     await expect(this.tooltipVisible).toBeHidden({ timeout: 2000 });
   }
@@ -32,31 +34,18 @@ export default class ToolTipsPage extends BasePage {
     await target.scrollIntoViewIfNeeded();
     await target.hover({ force: true });
 
-    const tooltip = this.tooltipVisible;
-    await tooltip.waitFor({ state: 'visible', timeout: 3000 });
+    await this.tooltipVisible.waitFor({ state: 'visible', timeout: 3000 });
 
-    const inner = tooltip.locator('.tooltip-inner');
-    await expect(inner).toBeVisible();
+    await expect(this.tooltipInner).toBeVisible();
 
-    return (await inner.textContent()).trim();
+    return (await this.tooltipInner.textContent()).trim();
   }
 
   async showTooltip(target) {
     await this.clearTooltip();
     await target.scrollIntoViewIfNeeded();
-    for (let attempt = 0; attempt < 3; attempt++) {
-      await target.hover({ force: true });
-      const appeared = await this.tooltipVisible
-        .first()
-        .waitFor({ state: 'visible', timeout: 2500 })
-        .then(() => true)
-        .catch(() => false);
-
-      if (appeared) return;
-      await this.page.waitForTimeout(300);
-    }
-
-    await expect(this.tooltipVisible).toBeVisible({ timeout: 3000 });
+    await target.hover({ force: true });
+    await expect(this.tooltipVisible).toHaveCount(1, { timeout: 5000 });
   }
 
   getButtonTooltipText() {

@@ -12,6 +12,7 @@ export default class AlertsPage extends BasePage {
 
       confirmResult: page.locator('#confirmResult'),
       promptResult: page.locator('#promptResult'),
+      dialogs: page.locator('dialog[open]'),
 
       alertsHeader: page.locator('h1', { hasText: 'Alerts' }),
     };
@@ -22,28 +23,28 @@ export default class AlertsPage extends BasePage {
     return await this.selectors.alertsHeader.isVisible();
   }
 
-  async clickSimpleAlert() {
+  async clickSimpleAlert(options = {}) {
     await this.selectors.alertButton.scrollIntoViewIfNeeded();
     await this.selectors.alertButton.waitFor({ state: 'visible' });
-    await this.selectors.alertButton.click();
+    await this.selectors.alertButton.click(options);
   }
 
-  async clickTimerAlert() {
+  async clickTimerAlert(options = {}) {
     await this.selectors.timerAlertButton.scrollIntoViewIfNeeded();
     await this.selectors.timerAlertButton.waitFor({ state: 'visible' });
-    await this.selectors.timerAlertButton.click();
+    await this.selectors.timerAlertButton.click(options);
   }
 
-  async clickConfirmAlert() {
+  async clickConfirmAlert(options = {}) {
     await this.selectors.confirmButton.scrollIntoViewIfNeeded();
     await this.selectors.confirmButton.waitFor({ state: 'visible' });
-    await this.selectors.confirmButton.click();
+    await this.selectors.confirmButton.click(options);
   }
 
-  async clickPromptAlert() {
+  async clickPromptAlert(options = {}) {
     await this.selectors.promptButton.scrollIntoViewIfNeeded();
     await this.selectors.promptButton.waitFor({ state: 'visible' });
-    await this.selectors.promptButton.click();
+    await this.selectors.promptButton.click(options);
   }
 
   async getConfirmResult() {
@@ -77,8 +78,8 @@ export default class AlertsPage extends BasePage {
   }
 
   async verifyNoActiveDialogs() {
-    const dialogs = await this.page.$$('dialog[open]');
-    return dialogs.length === 0;
+    const dialogCount = await this.selectors.dialogs.count();
+    return dialogCount === 0;
   }
 
   async clickAlertButtonByType(buttonSelector) {

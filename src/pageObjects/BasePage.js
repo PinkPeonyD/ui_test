@@ -1,6 +1,13 @@
 export default class BasePage {
   constructor(page) {
     this.page = page;
+
+    this.locators = {
+      optionByText: text => this.page.locator(`//div[contains(@class,"option") and normalize-space()="${text}"]`),
+      labelByText: text => this.page.locator(`//label[contains(normalize-space(), "${text}")]`),
+      inputById: id => this.page.locator(`//input[@id="${id}"]`),
+      buttonByName: name => this.page.getByRole('button', { name }),
+    };
   }
 
   async navigateTo(url) {
@@ -8,7 +15,9 @@ export default class BasePage {
   }
 
   async clickOnButton(name) {
-    await this.page.getByRole('button', { name }).click();
+    const button = this.locators.buttonByName(name);
+    await button.waitFor({ state: 'visible' });
+    await button.click();
   }
 
   async clickOnElementByLocator(locator) {
@@ -41,14 +50,14 @@ export default class BasePage {
   }
 
   getOptionByText(text) {
-    return this.page.locator(`//div[contains(@class,"option") and normalize-space()="${text}"]`);
+    return this.locators.optionByText(text);
   }
 
   getLabelByText(text) {
-    return this.page.locator(`//label[contains(normalize-space(), "${text}")]`);
+    return this.locators.labelByText(text);
   }
 
   getInputById(id) {
-    return this.page.locator(`//input[@id="${id}"]`);
+    return this.locators.inputById(id);
   }
 }

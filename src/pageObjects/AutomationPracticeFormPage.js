@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test';
 import { BasePage } from './index.js';
 
 export default class AutomationPracticeFormPage extends BasePage {
@@ -28,31 +29,27 @@ export default class AutomationPracticeFormPage extends BasePage {
       modalTable: page.locator('.table-responsive'),
 
       formHeader: page.locator('.practice-form-wrapper h5', { hasText: 'Student Registration Form' }),
+      stateInput: page.locator(
+        'xpath=//div[@id="state"]//input[contains(@id, "react-select") and contains(@id, "input")]',
+      ),
+      cityInput: page.locator(
+        'xpath=//div[@id="city"]//input[contains(@id, "react-select") and contains(@id, "input")]',
+      ),
+      anyDatePickerDay: page.locator('.react-datepicker__day'),
+      modalRows: page.locator('.table-responsive tbody tr'),
+      formElement: page.locator('form').first(),
     };
-  }
 
-  getStateInputLocator() {
-    return this.page.locator(
-      'xpath=//div[@id="state"]//input[contains(@id, "react-select") and contains(@id, "input")]',
-    );
-  }
-
-  getCityInputLocator() {
-    return this.page.locator(
-      'xpath=//div[@id="city"]//input[contains(@id, "react-select") and contains(@id, "input")]',
-    );
-  }
-
-  getDatePickerDayLocator(day) {
-    return this.page.locator(`.react-datepicker__day--${day.toString().padStart(3, '0')}`);
-  }
-
-  getDatePickerDayByAriaLabel(day) {
-    return this.page.locator(`[aria-label*="${day}"]`);
-  }
-
-  getDatePickerDayByText(day) {
-    return this.page.locator('.react-datepicker__day', { hasText: day.toString() }).first();
+    this.dynamicLocators = {
+      datePickerDay: day => page.locator(`.react-datepicker__day--${day.toString().padStart(3, '0')}`),
+      datePickerDayByAriaLabel: day => page.locator(`[aria-label*="${day}"]`),
+      datePickerDayByText: day => page.locator('.react-datepicker__day', { hasText: day.toString() }).first(),
+      genderOption: gender => page.locator(`xpath=//label[contains(text(), "${gender}")]`),
+      subjectChip: subject => page.locator(`div[class*="multiValue"]:has-text("${subject}")`),
+      hobbyOption: hobby => page.locator(`//label[normalize-space(text())="${hobby}"]`),
+      modalLabelCell: row => row.locator('td:first-child'),
+      modalValueCell: row => row.locator('td:last-child'),
+    };
   }
 
   async verifyFormHeader() {
@@ -83,7 +80,7 @@ export default class AutomationPracticeFormPage extends BasePage {
   }
 
   async selectGender(gender) {
-    const genderLocator = this.page.locator(`xpath=//label[contains(text(), "${gender}")]`);
+    const genderLocator = this.dynamicLocators.genderOption(gender);
     await genderLocator.scrollIntoViewIfNeeded();
     await genderLocator.click();
   }
@@ -103,17 +100,24 @@ export default class AutomationPracticeFormPage extends BasePage {
       }
     }
 
-    await this.page.locator('.react-datepicker__day').first().waitFor({ state: 'visible' });
+    await this.selectors.anyDatePickerDay.first().waitFor({ state: 'visible' });
 
-    try {
-      await this.getDatePickerDayLocator(day).click();
-    } catch {
+    const dayLocators = [
+      this.dynamicLocators.datePickerDay(day),
+      this.dynamicLocators.datePickerDayByAriaLabel(day),
+      this.dynamicLocators.datePickerDayByText(day),
+    ];
+
+    for (const locator of dayLocators) {
       try {
-        await this.getDatePickerDayByAriaLabel(day).click();
+        await locator.click();
+        return;
       } catch {
-        await this.getDatePickerDayByText(day).click();
+        continue;
       }
     }
+
+    throw new Error(`Unable to select day ${day}`);
   }
 
   async addSubject(subject) {
@@ -124,7 +128,7 @@ export default class AutomationPracticeFormPage extends BasePage {
     await this.selectors.subjectsInput.fill(subject);
     await this.page.keyboard.press('Enter');
 
-    const subjectChip = this.page.locator(`div[class*="multiValue"]:has-text("${subject}")`);
+    const subjectChip = this.dynamicLocators.subjectChip(subject);
     await subjectChip
       .waitFor({
         state: 'attached',
@@ -145,7 +149,7 @@ export default class AutomationPracticeFormPage extends BasePage {
     await this.page.keyboard.press('Escape');
 
     for (const hobby of hobbies) {
-      const hobbyLocator = this.page.locator(`//label[normalize-space(text())="${hobby}"]`);
+      const hobbyLocator = this.dynamicLocators.hobbyOption(hobby);
       await hobbyLocator.scrollIntoViewIfNeeded();
       await hobbyLocator.click({ force: true });
     }
@@ -169,29 +173,21 @@ export default class AutomationPracticeFormPage extends BasePage {
   async selectState(stateName) {
     await this.selectors.stateDropdown.scrollIntoViewIfNeeded();
     await this.selectors.stateDropdown.click();
-    await this.getStateInputLocator().fill(stateName);
+    await this.selectors.stateInput.fill(stateName);
     await this.page.keyboard.press('Enter');
 
-    const cityInput = this.getCityInputLocator();
-    await cityInput.waitFor({ state: 'attached', timeout: 5000 });
-    await this.page.waitForFunction(
-      () => {
-        const input = document.querySelector('div#city input[id*="react-select"][id*="input"]');
-        return input && !input.disabled;
-      },
-      { timeout: 5000 },
-    );
+    await expect(this.selectors.cityInput).toBeVisible({ timeout: 5000 });
+    await expect(this.selectors.cityInput).toBeEnabled({ timeout: 5000 });
   }
 
   async selectCity(cityName) {
     await this.selectors.cityDropdown.click();
-    await this.getCityInputLocator().fill(cityName);
+    await this.selectors.cityInput.fill(cityName);
     await this.page.keyboard.press('Enter');
   }
 
   async isCityDropdownDisabled() {
-    const isDisabled = await this.getCityInputLocator().isDisabled();
-    return isDisabled;
+    return await this.selectors.cityInput.isDisabled();
   }
 
   async submitForm() {
@@ -225,12 +221,12 @@ export default class AutomationPracticeFormPage extends BasePage {
   async getModalData() {
     await this.selectors.modalTable.waitFor({ state: 'visible' });
 
-    const rows = await this.selectors.modalTable.locator('tbody tr').all();
+    const rows = await this.selectors.modalRows.all();
     const data = {};
 
     for (const row of rows) {
-      const label = await row.locator('td:first-child').textContent();
-      const value = await row.locator('td:last-child').textContent();
+      const label = await this.dynamicLocators.modalLabelCell(row).textContent();
+      const value = await this.dynamicLocators.modalValueCell(row).textContent();
       data[label.trim()] = value.trim();
     }
 
@@ -238,7 +234,7 @@ export default class AutomationPracticeFormPage extends BasePage {
   }
 
   async checkFormValidity() {
-    const form = await this.page.locator('form').first();
+    const form = this.selectors.formElement;
     return await form.evaluate(form => form.checkValidity());
   }
 

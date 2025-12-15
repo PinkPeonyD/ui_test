@@ -14,6 +14,12 @@ export default class SelectMenuPage extends BasePage {
     this.multiInput = this.multiContainer.locator('input[id*="react-select"][id$="-input"]');
 
     this.multiValueChips = page.locator('#selectMenuContainer div[class*="multiValue"]');
+    this.multiValueChipByText = value =>
+      page.locator(`#selectMenuContainer div[class*="multiValue"]:has-text("${value}")`);
+
+    this.selectValueSingleValue = this.selectValueControl.locator("[class*='singleValue']");
+    this.selectOneSingleValue = this.selectOneControl.locator("[class*='singleValue']");
+    this.selectedOldStyleOption = this.oldStyleSelect.locator('option:checked');
   }
 
   async open() {
@@ -44,34 +50,33 @@ export default class SelectMenuPage extends BasePage {
       await option.waitFor({ state: 'visible', timeout: 5000 });
       await option.click();
 
-      const chip = this.page.locator(`#selectMenuContainer div[class*="multiValue"]:has-text("${value}")`);
-      await chip.waitFor({ state: 'attached', timeout: 2000 });
+      const chip = this.multiValueChipByText(value);
+      await chip.waitFor({ state: 'attached', timeout: 4000 });
     }
   }
 
   async getDisplayedSelectValue() {
-    const valueEl = this.selectValueControl.locator("[class*='singleValue']");
-    await valueEl.waitFor({ state: 'visible' });
-    return (await valueEl.textContent()).trim();
+    await this.selectValueSingleValue.waitFor({ state: 'visible' });
+    return (await this.selectValueSingleValue.textContent()).trim();
   }
 
   async getDisplayedSelectOne() {
-    const valueEl = this.selectOneControl.locator("[class*='singleValue']");
-    await valueEl.waitFor({ state: 'visible' });
-    return (await valueEl.textContent()).trim();
+    await this.selectOneSingleValue.waitFor({ state: 'visible' });
+    return (await this.selectOneSingleValue.textContent()).trim();
   }
 
   async getDisplayedOldStyle() {
-    const selectedOption = this.oldStyleSelect.locator('option:checked');
-    return (await selectedOption.textContent()).trim();
+    return (await this.selectedOldStyleOption.textContent()).trim();
   }
 
   async getDisplayedMultiValues() {
     const count = await this.multiValueChips.count();
     const texts = [];
     for (let i = 0; i < count; i++) {
-      const chipText = await this.multiValueChips.nth(i).locator('> div').first().textContent();
-      texts.push(chipText.trim());
+      const chip = this.multiValueChips.nth(i);
+      await chip.waitFor({ state: 'visible', timeout: 4000 });
+      const labelText = await chip.textContent();
+      texts.push(labelText.replace(/×/g, '').trim());
     }
     return texts;
   }

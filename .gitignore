@@ -7,6 +7,7 @@ playwright-report
 playwright-report/
 test-report/
 /test-reports/
+test-files/
 # Created by https://www.toptal.com/developers/gitignore/api/node,test,linux,macos,windows,calabash,sonarqube,visualstudiocode,webstorm+all
 # Edit at https://www.toptal.com/developers/gitignore?templates=node,test,linux,macos,windows,calabash,sonarqube,visualstudiocode,webstorm+all
 
@@ -265,3 +266,6 @@ junit.xml
 /jest_html_reporters/
 /jest-html-reporters-attach
 /html-report/
+
+# Playwright
+/playwright/.auth/
